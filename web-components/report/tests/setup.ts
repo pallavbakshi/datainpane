@@ -2,6 +2,12 @@ import { afterAll, afterEach, beforeAll } from "vitest";
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 import fragmentJson from "./fixtures/fragment.json?raw";
+import * as Vue from "vue";
+import hljs from "highlight.js";
+
+// @highlightjs/vue-plugin expects global `Vue` and `hljs` variables
+(globalThis as any).Vue = Vue;
+(globalThis as any).hljs = hljs;
 
 const DISPATCH_FRAGMENT = JSON.parse(fragmentJson);
 

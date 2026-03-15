@@ -58,8 +58,12 @@ const storeProps = storeToRefs(rootStore);
 const { report } = storeProps;
 
 const htmlHeader = computed(() => {
-    // HTML header is taken from the report object, unless overwritten via props
-    // TODO - support setting via report object?
+    // HTML header is taken from the report object, unless overwritten via props.
+    // This is sanitized to only allow <style> tags — the header is used solely
+    // for injecting CSS from the report's formatting config. Any non-style
+    // content (scripts, HTML elements, etc.) is stripped to prevent XSS.
+    // For org users the header is passed through unsanitized as it comes from
+    // trusted admin-controlled configuration.
     const dirtyHeader = p.htmlHeader;
     return p.isOrg
         ? dirtyHeader

@@ -10,7 +10,7 @@ tasks:
     run: once
     cmds:
       - cmd: git config filter.clear-notebook-output.clean "./public-docs/clear-notebook-output.sh"
-      - cmd: poetry install
+      - cmd: uv sync
 
   test:
     desc: "Run self-contained tests"
@@ -18,17 +18,17 @@ tasks:
   build:
     desc: "Build a package ready for a deploy"
     env:
-      DATAPANE_CDN_BASE: '{{ .DATAPANE_CDN_BASE | default "" }}'
+      DIP_CDN_BASE: '{{ .DIP_CDN_BASE | default "" }}'
     cmds:
-      - cmd: poetry run ./nbbuild.sh
-      - cmd: poetry run mkdocs build
+      - cmd: uv run ./nbbuild.sh
+      - cmd: uv run mkdocs build
 
   build-docs-only:
     desc: "Locally build the docs only (don't run notebooks)"
     env:
-      DATAPANE_CDN_BASE: '{{ .DATAPANE_CDN_BASE | default "" }}'
+      DIP_CDN_BASE: '{{ .DIP_CDN_BASE | default "" }}'
     cmds:
-      - cmd: poetry run mkdocs build
+      - cmd: uv run mkdocs build
 
   build:inline-statics:
     desc: "Build a package ready for a deploy, with report statics loaded into the build"
@@ -37,12 +37,12 @@ tasks:
       - defer: rm docs/_report-statics
       - task: build
         vars:
-          DATAPANE_CDN_BASE: /_report-statics
+          DIP_CDN_BASE: /_report-statics
 
   serve:
     desc: "Serve the site locally"
     cmds:
-      - cmd: poetry run mkdocs serve
+      - cmd: uv run mkdocs serve
 
   serve:inline-statics:
     desc: "Serve the site locally, with report statics loaded into the build"
@@ -51,10 +51,10 @@ tasks:
       - defer: rm docs/_report-statics
       - task: serve
         vars:
-          DATAPANE_CDN_BASE: /_report-statics
+          DIP_CDN_BASE: /_report-statics
 
   deploy:
     desc: "Deploy the package"
     cmds:
       # wrangler pages doesn't support a config file yet
-      - cmd: wrangler pages publish --project-name datainpane-docs site
+      - cmd: wrangler pages deploy --project-name datainpane-docs site

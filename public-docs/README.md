@@ -4,7 +4,7 @@ The Data In Pane documentation.
 
 ## Requirements
 
-1. `poetry`, as per [their instructions](https://python-poetry.org/docs/master/#installing-with-the-official-installer)
+1. `uv`, as per [their instructions](https://docs.astral.sh/uv/getting-started/installation/)
 2. `chromium`, through your package manager:
 
     _we will pick up `chromium` or `chromium-browser` from your `$PATH`_
@@ -14,10 +14,10 @@ The Data In Pane documentation.
 
 ## Generating the docs
 
-1. Run `poetry run ./nbbuild.sh` to execute all Jupyter notebooks and generate Data In Pane apps and image previews.
-2. Run `poetry run mkdocs build` to generate static site in `site/`.
+1. Run `uv run ./nbbuild.sh` to execute all Jupyter notebooks and generate Data In Pane reports and image previews.
+2. Run `uv run mkdocs build` to generate static site in `site/`.
 
-`poetry run mkdocs serve` can be used to serve locally.
+`uv run mkdocs serve` can be used to serve locally.
 
 _hint:_ You can also use the same tool we use for Deploys for local serving after a build:
 

@@ -1,4 +1,21 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import sanitizeHtml from "sanitize-html";
+
+const sanitizeTableOptions: sanitizeHtml.IOptions = {
+    allowedTags: ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+                  'caption', 'colgroup', 'col', 'span', 'div', 'p', 'br'],
+    allowedAttributes: {
+        'table': ['class', 'id', 'style'],
+        'th': ['class', 'style', 'colspan', 'rowspan', 'scope'],
+        'td': ['class', 'style', 'colspan', 'rowspan'],
+        'tr': ['class', 'style'],
+        'col': ['span', 'style'],
+        'span': ['class', 'style'],
+        'div': ['class', 'style'],
+    },
+};
+
 const p = defineProps<{
     html: string;
     singleBlockEmbed?: boolean;
@@ -6,6 +23,10 @@ const p = defineProps<{
 }>();
 
 const { dipLocal } = window;
+
+const sanitizedHtml = computed(() =>
+    sanitizeHtml(p.html, sanitizeTableOptions),
+);
 
 const tableRef = (node: any): void => {
     /**
@@ -25,7 +46,7 @@ const tableRef = (node: any): void => {
     <div
         :ref="tableRef"
         :class="['w-full', { 'h-full absolute top-0': p.singleBlockEmbed }]"
-        v-html="p.html"
+        v-html="sanitizedHtml"
         data-cy="block-shadow"
     />
 </template>

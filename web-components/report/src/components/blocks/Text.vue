@@ -3,8 +3,26 @@ import { computed } from "vue";
 import { Marked } from "marked";
 import { markedHighlight } from "marked-highlight";
 import hljs from "highlight.js";
+import sanitizeHtml from "sanitize-html";
 import BlockWrapper from "../layout/BlockWrapper.vue";
 import { BlockFigureProps } from "../../data-model/blocks";
+
+const sanitizeOptions: sanitizeHtml.IOptions = {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+        'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'details', 'summary', 'figure', 'figcaption',
+        'pre', 'code', 'span', 'del', 'ins', 'sup', 'sub',
+    ]),
+    allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        'code': ['class'],  // for syntax highlighting classes
+        'span': ['class', 'style'],  // for highlight.js
+        'pre': ['class'],
+        'img': ['src', 'alt', 'title', 'width', 'height'],
+        'a': ['href', 'title', 'target', 'rel'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'data'],
+};
 
 const markedInstance = new Marked(
     markedHighlight({
@@ -23,7 +41,9 @@ const p = defineProps<{
     figure: BlockFigureProps;
     singleBlockEmbed?: boolean;
 }>();
-const md = computed(() => markedInstance.parse(p.content) as string);
+const md = computed(() =>
+    sanitizeHtml(markedInstance.parse(p.content) as string, sanitizeOptions),
+);
 </script>
 
 <template>
