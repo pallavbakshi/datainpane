@@ -183,9 +183,16 @@ def save_pdf(
         threading.Thread(target=server.serve_forever, daemon=True).start()
 
         try:
+            # Calculate viewport width to match PDF content area
+            # so charts render at the correct size natively.
+            _mm_to_px = 96 / 25.4
+            _w_mm = float(page_width.replace("mm", ""))
+            _margin_mm = 10 + 10  # left + right margins
+            _viewport_w = int((_w_mm - _margin_mm) * _mm_to_px)
+
             with sync_playwright() as p:
                 browser = p.chromium.launch()
-                page = browser.new_page()
+                page = browser.new_page(viewport={"width": _viewport_w, "height": 800})
 
                 page.goto(
                     f"http://127.0.0.1:{port}/report.html",
@@ -197,25 +204,8 @@ def save_pdf(
                     # Wait for Vue mount + chart rendering (Bokeh, Plotly, Vega)
                     page.wait_for_timeout(3000)
 
-                # Hide interactive controls and fit content to page width
+                # Hide interactive controls that don't belong in a static PDF
                 page.add_style_tag(content="""
-                    /* Force content to fit within page */
-                    body, #report, main, .max-w-screen-xl, .max-w-3xl, .max-w-full {
-                        max-width: 100% !important;
-                        overflow: hidden !important;
-                    }
-                    /* Constrain charts and embeds */
-                    [data-cy=block-vega], .vega-embed, canvas, svg,
-                    [data-cy=block-plotly], .js-plotly-plot,
-                    [data-cy=block-bokeh],
-                    revo-grid {
-                        max-width: 100% !important;
-                        overflow: hidden !important;
-                    }
-                    .vega-embed canvas, .vega-embed svg {
-                        width: 100% !important;
-                        height: auto !important;
-                    }
                     /* DataTable toolbar: SQL query, export */
                     [data-cy=btn-run-query], [data-cy=btn-reset-data],
                     [data-cy=btn-open-query], [data-cy=dropdown-export],
