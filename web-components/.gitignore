@@ -14,6 +14,10 @@ junit.xml
 /dist/*
 !/dist/report
 !/dist/assets
+!/dist/base
+!/dist/template-components
+!/dist/vue.esm-browser.js
+!/dist/vue.esm-browser.prod.js
 
 # misc
 .DS_Store
