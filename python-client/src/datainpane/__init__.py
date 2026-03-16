@@ -40,6 +40,7 @@ from .processors import (
     FontChoice,
     Formatting,
     TextAlignment,
+    Theme,
     Width,
     build_report,
     save_report,
@@ -89,6 +90,7 @@ __all__ = [
     "FontChoice",
     "Formatting",
     "TextAlignment",
+    "Theme",
 ]
 
 

@@ -108,7 +108,22 @@ class FontChoice(Enum):
 
 @dc.dataclass
 class Formatting:
-    """Configure styling and formatting"""
+    """Configure styling and formatting.
+
+    Use a preset theme via `Formatting.from_theme(Theme.DARK)` or customize
+    individual properties directly::
+
+        dip.save_report(view, path="report.html", formatting=Formatting(
+            bg_color="#1E293B",
+            accent_color="#FB923C",
+            font=FontChoice.SANS,
+            width=Width.FULL,
+        ))
+
+    You can also inject arbitrary CSS via `custom_css`::
+
+        Formatting(custom_css="h1 { border-bottom: 2px solid #FB923C; }")
+    """
 
     bg_color: str = "#FFF"
     accent_color: str = "#4E46E5"
@@ -116,6 +131,7 @@ class Formatting:
     text_alignment: TextAlignment = TextAlignment.LEFT
     width: Width = Width.MEDIUM
     light_prose: bool = False
+    custom_css: str = ""
 
     def to_css(self) -> str:
         if isinstance(self.font, FontChoice):
@@ -123,9 +139,89 @@ class Formatting:
         else:
             font = self.font
 
-        return f""":root {{
+        css = f""":root {{
     --dp-accent-color: {self.accent_color};
     --dp-bg-color: {self.bg_color};
     --dp-text-align: {self.text_alignment.value};
     --dp-font-family: {font};
 }}"""
+        if self.custom_css:
+            css += f"\n{self.custom_css}"
+        return css
+
+    @classmethod
+    def from_theme(cls, theme: Theme, **overrides) -> Formatting:
+        """Create a Formatting instance from a named theme.
+
+        Any keyword arguments override the theme defaults::
+
+            fmt = Formatting.from_theme(Theme.DARK, width=Width.FULL)
+        """
+        base = dict(_THEMES[theme])
+        base.update(overrides)
+        return cls(**base)
+
+
+class Theme(Enum):
+    """Built-in report themes."""
+
+    DEFAULT = "default"
+    DARK = "dark"
+    MIDNIGHT = "midnight"
+    OCEAN = "ocean"
+    FOREST = "forest"
+    CORAL = "coral"
+    MONOCHROME = "monochrome"
+    NAVY_APRICOT = "navy_apricot"
+
+
+_THEMES: dict[Theme, dict[str, t.Any]] = {
+    Theme.DEFAULT: dict(
+        bg_color="#FFF",
+        accent_color="#4E46E5",
+        font=FontChoice.DEFAULT,
+        light_prose=False,
+    ),
+    Theme.DARK: dict(
+        bg_color="#1a1a2e",
+        accent_color="#e94560",
+        font=FontChoice.DEFAULT,
+        light_prose=True,
+    ),
+    Theme.MIDNIGHT: dict(
+        bg_color="#0f172a",
+        accent_color="#38bdf8",
+        font=FontChoice.SANS,
+        light_prose=True,
+    ),
+    Theme.OCEAN: dict(
+        bg_color="#f0f9ff",
+        accent_color="#0284c7",
+        font=FontChoice.DEFAULT,
+        light_prose=False,
+    ),
+    Theme.FOREST: dict(
+        bg_color="#f0fdf4",
+        accent_color="#16a34a",
+        font=FontChoice.DEFAULT,
+        light_prose=False,
+    ),
+    Theme.CORAL: dict(
+        bg_color="#fff7ed",
+        accent_color="#ea580c",
+        font=FontChoice.DEFAULT,
+        light_prose=False,
+    ),
+    Theme.MONOCHROME: dict(
+        bg_color="#fafafa",
+        accent_color="#404040",
+        font=FontChoice.SANS,
+        light_prose=False,
+    ),
+    Theme.NAVY_APRICOT: dict(
+        bg_color="#f8fafc",
+        accent_color="#FB923C",
+        font=FontChoice.DEFAULT,
+        light_prose=False,
+    ),
+}
