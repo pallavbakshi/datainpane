@@ -197,6 +197,23 @@ def save_pdf(
                     # Wait for Vue mount + chart rendering (Bokeh, Plotly, Vega)
                     page.wait_for_timeout(3000)
 
+                # Hide interactive controls that don't work in a static PDF
+                page.add_style_tag(content="""
+                    /* DataTable toolbar: SQL query, export, page size */
+                    [data-cy=btn-run-query], [data-cy=btn-reset-data],
+                    [data-cy=btn-open-query], [data-cy=dropdown-export],
+                    .query-container, .cm-container,
+                    /* DataTable stats badges and pagination */
+                    [data-cy=block-datatable] > div:first-child,
+                    /* NavBar (logo, settings, page tabs — not useful in PDF) */
+                    nav,
+                    /* Vega/Altair action menu */
+                    .vega-actions, .vega-embed summary,
+                    /* Plotly modebar */
+                    .modebar-container
+                    { display: none !important; }
+                """)
+
                 page.pdf(
                     path=path,
                     width=page_width,
