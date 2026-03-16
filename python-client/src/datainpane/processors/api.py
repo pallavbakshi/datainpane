@@ -105,23 +105,21 @@ def save_pdf(
     path: str,
     name: str = "Report",
     formatting: Formatting | None = None,
+    landscape: bool = True,
     wait_for_js: bool = True,
-    page_width: str = "210mm",
-    page_height: str = "297mm",
 ) -> None:
-    """Save the report as a PDF file.
+    """Save the report as a high-quality PDF file.
 
-    Requires the ``pdf`` extra: ``uv add datainpane[pdf]`` (or ``pip install datainpane[pdf]``)
-    and a one-time browser install: ``playwright install chromium``
+    Uses A4 landscape by default for best dashboard rendering.
+    Requires: ``uv add datainpane[pdf]`` then ``playwright install chromium``
 
     Args:
         blocks: The ``Blocks`` object or a list of Blocks
         path: File path to store the PDF
         name: Name of the document
         formatting: Sets the basic styling
-        wait_for_js: Wait for JS to finish rendering (plots, tables). Default True.
-        page_width: PDF page width (default: A4, "210mm")
-        page_height: PDF page height (default: A4, "297mm")
+        landscape: Use landscape orientation (default: True)
+        wait_for_js: Wait for JS rendering (charts, tables). Default True.
     """
     import tempfile
 
@@ -134,31 +132,39 @@ def save_pdf(
             "Then run: playwright install chromium"
         )
 
-    import importlib.resources
     import threading
     from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-    # Locate the web-components dist directory shipped with the package.
-    # If it exists (editable install or full repo checkout), we serve assets
-    # locally so the report HTML works without depending on the CDN.
-    # parents[4] from src/datainpane/processors/api.py -> repo root
+    # A4 dimensions
+    if landscape:
+        page_width, page_height = "297mm", "210mm"
+        margin_lr, margin_tb = 15, 12
+    else:
+        page_width, page_height = "210mm", "297mm"
+        margin_lr, margin_tb = 10, 15
+
+    # Calculate viewport to match PDF content area at 2x DPI for crisp rendering
+    _mm_to_px = 96 / 25.4
+    _content_w_mm = float(page_width.replace("mm", "")) - (margin_lr * 2)
+    _viewport_w = int(_content_w_mm * _mm_to_px)
+
+    # Locate web-components dist (for local serving without CDN)
     _dist_dir = Path(__file__).resolve().parents[4] / "web-components" / "dist"
     if not _dist_dir.is_dir():
-        # Fallback: installed package — dist not available locally
         _dist_dir = None
+
+    # Build static HTML tables from any DataTable blocks to replace revogrid
+    _pdf_table_css, _pdf_table_js = _build_static_table_overrides(blocks)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
 
         if _dist_dir:
-            # Symlink the dist directory into the temp dir so the local server
-            # can serve both the report HTML and the JS/CSS assets.
             (tmp_path / "dist").symlink_to(_dist_dir)
             cdn_base = "/dist"
         else:
-            cdn_base = None  # use default CDN
+            cdn_base = None
 
-        # Save report HTML with CDN pointing to our local server
         import os
         old_cdn = os.environ.get("DIP_CDN_BASE")
         try:
@@ -171,28 +177,23 @@ def save_pdf(
             elif "DIP_CDN_BASE" in os.environ:
                 del os.environ["DIP_CDN_BASE"]
 
-        # Serve the temp dir
         class _Handler(SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=tmp_dir, **kwargs)
             def log_message(self, format, *args):
-                pass  # suppress request logs
+                pass
 
         server = HTTPServer(("127.0.0.1", 0), _Handler)
         port = server.server_address[1]
         threading.Thread(target=server.serve_forever, daemon=True).start()
 
         try:
-            # Calculate viewport width to match PDF content area
-            # so charts render at the correct size natively.
-            _mm_to_px = 96 / 25.4
-            _w_mm = float(page_width.replace("mm", ""))
-            _margin_mm = 10 + 10  # left + right margins
-            _viewport_w = int((_w_mm - _margin_mm) * _mm_to_px)
-
             with sync_playwright() as p:
                 browser = p.chromium.launch()
-                page = browser.new_page(viewport={"width": _viewport_w, "height": 800})
+                page = browser.new_page(
+                    viewport={"width": _viewport_w, "height": 800},
+                    device_scale_factor=2,
+                )
 
                 page.goto(
                     f"http://127.0.0.1:{port}/report.html",
@@ -201,24 +202,28 @@ def save_pdf(
                 )
 
                 if wait_for_js:
-                    # Wait for Vue mount + chart rendering (Bokeh, Plotly, Vega)
                     page.wait_for_timeout(3000)
 
-                # Hide interactive controls that don't belong in a static PDF
-                page.add_style_tag(content="""
-                    /* DataTable toolbar: SQL query, export */
+                # Replace revogrid DataTables with static HTML tables
+                if _pdf_table_js:
+                    page.evaluate(_pdf_table_js)
+
+                # PDF-specific styling
+                page.add_style_tag(content=f"""
+                    /* Hide interactive controls */
                     [data-cy=btn-run-query], [data-cy=btn-reset-data],
                     [data-cy=btn-open-query], [data-cy=dropdown-export],
                     .query-container, .cm-container,
-                    /* DataTable stats badges */
                     [data-cy=block-datatable] > div:first-child,
-                    /* NavBar */
                     nav,
-                    /* Vega/Altair action menu */
                     .vega-actions, .vega-embed summary,
-                    /* Plotly modebar */
                     .modebar-container
-                    { display: none !important; }
+                    {{ display: none !important; }}
+
+                    /* PDF typography */
+                    body {{ font-size: 14px; }}
+
+                    {_pdf_table_css}
                 """)
 
                 page.pdf(
@@ -226,7 +231,12 @@ def save_pdf(
                     width=page_width,
                     height=page_height,
                     print_background=True,
-                    margin={"top": "15mm", "bottom": "15mm", "left": "10mm", "right": "10mm"},
+                    margin={
+                        "top": f"{margin_tb}mm",
+                        "bottom": f"{margin_tb}mm",
+                        "left": f"{margin_lr}mm",
+                        "right": f"{margin_lr}mm",
+                    },
                 )
                 browser.close()
         finally:
@@ -234,6 +244,86 @@ def save_pdf(
 
     from datainpane.client.utils import display_msg
     display_msg(f"PDF saved to ./{path}")
+
+
+def _build_static_table_overrides(blocks: BlocksT) -> tuple[str, str]:
+    """Build CSS and JS to replace revogrid DataTables with static HTML tables in PDF.
+
+    Returns (css, js) strings. The JS replaces each [data-cy=block-datatable]
+    element's innerHTML with a styled <table>.
+    """
+    import json
+
+    from datainpane.blocks import DataTable
+    from datainpane.view import Blocks
+
+    # Collect all DataFrames from DataTable blocks
+    wrapped = Blocks.wrap_blocks(blocks)
+    tables = []
+
+    def _find_datatables(block):
+        if isinstance(block, DataTable):
+            tables.append(block.data)
+        for child in getattr(block, "blocks", []):
+            _find_datatables(child)
+
+    for block in wrapped.blocks:
+        _find_datatables(block)
+
+    if not tables:
+        return "", ""
+
+    # Build JS that replaces each DataTable with a static HTML table
+    replacements = []
+    for df in tables:
+        # Render DataFrame to clean HTML
+        html = df.to_html(
+            index=False,
+            classes="dip-pdf-table",
+            border=0,
+            max_rows=100,
+            escape=True,
+        )
+        replacements.append(json.dumps(html))
+
+    js = """
+    (function() {
+        const tables = document.querySelectorAll('[data-cy=block-datatable]');
+        const htmls = [%s];
+        tables.forEach((el, i) => {
+            if (i < htmls.length) {
+                el.innerHTML = htmls[i];
+            }
+        });
+    })();
+    """ % ",".join(replacements)
+
+    css = """
+    /* Static PDF table styling */
+    .dip-pdf-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin: 0.5em 0;
+    }
+    .dip-pdf-table th {
+        background: #f1f5f9;
+        font-weight: 600;
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .dip-pdf-table td {
+        padding: 6px 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .dip-pdf-table tr:last-child td {
+        border-bottom: none;
+    }
+    """
+
+    return css, js
 
 
 def stringify_report(
