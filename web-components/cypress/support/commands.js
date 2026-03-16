@@ -25,8 +25,6 @@
 // -- This is will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
 
-import "cypress-file-upload";
-
 Cypress.Commands.add("scrollToFirst", (selector) => {
     return cy.get(selector, { timeout: 20000 }).first().scrollIntoView();
 });
