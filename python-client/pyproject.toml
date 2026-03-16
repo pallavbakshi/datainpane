@@ -42,6 +42,9 @@ plotting = [
 ]
 cloud = []
 
+[project.scripts]
+dip = "datainpane.cli.main:cli"
+
 [project.urls]
 Homepage = "https://www.datainpane.com"
 Repository = "https://github.com/pallavbakshi/datainpane"
