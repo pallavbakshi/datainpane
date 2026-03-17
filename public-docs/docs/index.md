@@ -26,6 +26,16 @@ Reports can contain pages, tabs, groups, selects, toggles, and more. Export as s
 - **PDF Export** — `dip.save_pdf(view, "report.pdf")` renders reports to crisp, print-ready PDFs with properly sized charts and styled tables.
 - **8 Built-in Themes** — Default, Dark, Midnight, Ocean, Forest, Coral, Monochrome, and Navy Apricot. Apply with `Formatting.from_theme(Theme.DARK)`. Custom CSS also supported.
 - **6 Plot Libraries** — Altair, Plotly, Matplotlib, Bokeh, Folium, and pandas DataFrames all work out of the box.
+- **Convenience Blocks** — `Callout`, `Progress`, `BarChart`, `LineChart`, `AreaChart`, `ScatterChart`, and `Diff` for common patterns without boilerplate.
+- **Offline Mode** — `save_report(view, path, offline=True)` bundles all JS/CSS inline for fully self-contained HTML.
+- **Dark Mode Toggle** — Add a floating toggle button with `Formatting(dark_mode_toggle=True)`.
+- **Table of Contents** — `save_report(view, path, toc=True)` generates a sidebar from Page titles and Group labels.
+- **Header/Footer Branding** — `Formatting(header="...", footer="...")` for logos and branding.
+- **Multi-Page Export** — `save_report_pages(view, dest="output/")` saves each Page as a separate HTML file.
+- **Report Templates** — `dip.templates.dashboard()`, `titled_pages()`, `descriptive_pages()` for instant layouts.
+- **Jupyter Magic** — `%%dip` cell magic renders reports inline in notebooks.
+- **Accessibility** — ARIA roles on all generated HTML components.
+- **Polars & great_tables** — Auto-convert Polars DataFrames and great_tables GT objects.
 
 ## Quick Example
 

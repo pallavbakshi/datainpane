@@ -33,6 +33,20 @@ If you use [`uv`](https://docs.astral.sh/uv/), you can add it to your project wi
 uv add datainpane
 ```
 
+## Optional Extras
+
+```bash
+pip install datainpane[plotting]   # matplotlib, bokeh, plotly, folium
+pip install datainpane[tables]     # great_tables (auto-converts GT objects)
+pip install datainpane[pdf]        # playwright for PDF export
+```
+
+After installing the `pdf` extra, also run:
+
+```bash
+playwright install chromium
+```
+
 ## Upgrading
 
 To upgrade Data In Pane to the latest version:

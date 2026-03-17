@@ -22,7 +22,7 @@ dependencies = [
 datainpane = { path = "../python-client", editable = true }
 
 [tool.hatch.build.targets.wheel]
-packages = []
+packages = ["docs"]
 
 [build-system]
 requires = ["hatchling"]

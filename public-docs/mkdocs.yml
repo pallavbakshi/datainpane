@@ -13,9 +13,11 @@ nav:
     - Overview: "blocks/overview.ipynb"
     - Display Blocks: "blocks/display-blocks.ipynb"
     - Layout Blocks: "blocks/layout-blocks.ipynb"
+    - Convenience Blocks: "blocks/convenience-blocks.md"
   - Saving Reports:
     - Overview: "reports/overview.ipynb"
     - Styling: "reports/styling.ipynb"
+    - Features: "reports/features.md"
   - Resources:
       - Jupyter Integration: "reports/jupyter-integration.ipynb"
       - Examples: examples.md
